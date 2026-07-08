@@ -172,4 +172,4 @@ if predict_clicked:
 # FOOTER
 # ============================================================
 st.divider()
-st.caption("Breast Cancer Prediction App · Powered by SVM & FastAPI · Untuk tujuan edukasi")
+st.caption("Breast Cancer Prediction App · Powered by SVM & FastAPI · Modified by G.231.21.0165 - Fillian Adriansyah Utomo")
