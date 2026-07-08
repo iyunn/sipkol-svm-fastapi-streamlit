@@ -26,11 +26,42 @@ st.set_page_config(
 # Endpoint & kontrak API asli — TIDAK DIUBAH
 API_URL = "https://sipkol-svm-fastapi-streamlit-kvlz.vercel.app/predict"
 
-# Mapping label hasil prediksi (backend tetap kirim 0/1, UI tidak
-# pernah menampilkan angka mentah ke user).
+# ------------------------------------------------------------
+# MAPPING LABEL — WAJIB DIVERIFIKASI KE KODE TRAINING MODEL LO.
+# Default di bawah mengikuti konvensi sklearn load_breast_cancer()
+# (target 0=malignant, 1=benign), TAPI ini bisa berbeda tergantung
+# cara model lo dilatih (mis. LabelEncoder alfabetis akan
+# menghasilkan urutan terbalik: 0=benign, 1=malignant).
+#
+# Cara ganti kalau ternyata terbalik: ubah FLIP_LABELS jadi True.
+# ------------------------------------------------------------
+FLIP_LABELS = False  # set True kalau backend lo pakai 0=benign, 1=malignant
+
+_LABEL_INFO = {
+    "malignant": {
+        "label": "Malignant",
+        "emoji": "🔴",
+        "desc": "Sel terindikasi bersifat ganas (kanker).",
+        "recommendation": (
+            "Hasil menunjukkan indikasi keganasan. Disarankan segera berkonsultasi "
+            "dengan dokter spesialis onkologi untuk pemeriksaan lanjutan (biopsi, "
+            "USG, atau pencitraan lain) guna konfirmasi diagnosis."
+        ),
+    },
+    "benign": {
+        "label": "Benign",
+        "emoji": "🟢",
+        "desc": "Sel terindikasi bersifat jinak (bukan kanker).",
+        "recommendation": (
+            "Hasil menunjukkan kecenderungan jinak. Tetap disarankan melakukan "
+            "pemeriksaan payudara rutin secara berkala sesuai anjuran dokter."
+        ),
+    },
+}
+
 PREDICTION_LABELS = {
-    0: {"label": "Malignant", "emoji": "🔴", "desc": "Sel terindikasi bersifat ganas (kanker)."},
-    1: {"label": "Benign", "emoji": "🟢", "desc": "Sel terindikasi bersifat jinak (bukan kanker)."},
+    0: _LABEL_INFO["benign" if FLIP_LABELS else "malignant"],
+    1: _LABEL_INFO["malignant" if FLIP_LABELS else "benign"],
 }
 
 # Nama tampilan untuk 30 fitur, mengikuti konvensi standar dataset
@@ -137,25 +168,48 @@ if predict_clicked:
             info = PREDICTION_LABELS.get(prediction)
 
             st.divider()
-            st.subheader("📄 Hasil Prediksi")
+            st.subheader("📄 Hasil Analisis")
 
             with st.container(border=True):
                 if info is None:
                     # Fallback jika backend mengirim nilai di luar 0/1
                     st.warning(f"Nilai prediksi tidak dikenali: {prediction}")
                 else:
+                    # Interpretasi tingkat keyakinan berdasarkan confidence score
+                    if probability >= 0.90:
+                        confidence_level = "Sangat Tinggi"
+                    elif probability >= 0.70:
+                        confidence_level = "Tinggi"
+                    elif probability >= 0.50:
+                        confidence_level = "Sedang"
+                    else:
+                        confidence_level = "Rendah"
+
                     res_col1, res_col2 = st.columns([1, 1])
                     with res_col1:
-                        st.metric("Prediksi", f"{info['emoji']} {info['label']} (raw: {prediction})")
-                        st.caption(info["desc"])
+                        st.metric("Diagnosis Prediktif", f"{info['emoji']} {info['label']}")
+                        st.caption(f"Raw output model: `{prediction}`")
                     with res_col2:
-                        st.metric("Confidence", f"{probability:.2%}")
+                        st.metric("Tingkat Keyakinan", f"{probability:.2%}", delta=confidence_level)
                         st.progress(min(max(probability, 0.0), 1.0))
 
-            if info and info["label"] == "Benign":
-                st.success("✅ Hasil analisis selesai.")
-            elif info and info["label"] == "Malignant":
-                st.warning("⚠️ Hasil menunjukkan indikasi ganas. Disarankan konsultasi lebih lanjut.")
+                    st.divider()
+
+                    if info["label"] == "Malignant":
+                        st.error(f"⚠️ **{info['desc']}**\n\n{info['recommendation']}")
+                    else:
+                        st.success(f"✅ **{info['desc']}**\n\n{info['recommendation']}")
+
+                    if confidence_level in ("Sedang", "Rendah"):
+                        st.caption(
+                            "ℹ️ Tingkat keyakinan model tergolong belum tinggi — "
+                            "pertimbangkan pemeriksaan ulang atau metode diagnosis tambahan."
+                        )
+
+            st.caption(
+                "🔒 Hasil ini dihasilkan oleh model Machine Learning untuk tujuan "
+                "edukasi/demonstrasi, **bukan pengganti diagnosis medis profesional**."
+            )
 
         except requests.exceptions.Timeout:
             st.error("⏱️ Request timeout. Server tidak merespons, coba lagi beberapa saat.")
