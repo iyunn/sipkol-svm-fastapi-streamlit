@@ -29,7 +29,7 @@ for i in range(30):
 
 if st.button("Predict"):
 
-    url="http://127.0.0.1:8000/predict"
+    url = "https://sipkol-svm-fastapi-streamlit-kvlz.vercel.app/predict"
 
     response=requests.post(
 
