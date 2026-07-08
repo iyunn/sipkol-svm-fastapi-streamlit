@@ -146,7 +146,7 @@ if predict_clicked:
                 else:
                     res_col1, res_col2 = st.columns([1, 1])
                     with res_col1:
-                        st.metric("Prediksi", f"{info['emoji']} {info['label']}")
+                        st.metric("Prediksi", f"{info['emoji']} {info['label']} (raw: {prediction})")
                         st.caption(info["desc"])
                     with res_col2:
                         st.metric("Confidence", f"{probability:.2%}")
@@ -172,4 +172,4 @@ if predict_clicked:
 # FOOTER
 # ============================================================
 st.divider()
-st.caption("Breast Cancer Prediction App · Powered by SVM & FastAPI · Modified by G.231.21.0165 - Fillian Adriansyah Utomo")
+st.caption("Breast Cancer Prediction App · Powered by SVM & FastAPI · Untuk tujuan edukasi")
